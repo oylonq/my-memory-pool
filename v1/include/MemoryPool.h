@@ -5,7 +5,7 @@
 #include <iterator>
 #include <mutex>
 #include <utility>
-namespace memoryPool {
+namespace MemoryPool {
 #define MEMORY_POOL_NUM 64
 #define SLOT_BASE_SIZE 8
 #define MAX_SLOT_SIZE 512
@@ -23,7 +23,7 @@ public:
   void init(size_t);
 
   void *allocate();
-  void deallocate();
+  void deallocate(void *ptr);
 
 private:
   void allocateNewBlock();
@@ -38,7 +38,7 @@ private:
   int SlotSize_;                 // 槽大小
   Slot *firstBlock_;             // 指向内存槽管理的第一块实际内存块
   Slot *curSlot_;                // 指向当前未使用过的槽
-  std::atomic<Slot *> freeSlot_; // 指向空闲的槽（被使用过又被释放的槽）
+  std::atomic<Slot *> freeList_; // 指向空闲的槽（被使用过又被释放的槽）
   Slot *
       lastSlot_; // 作为当前内存块中最后能够存放元素的位置标识（超过该位置需要申请新的内存块）
   std::mutex
@@ -67,7 +67,7 @@ public:
       operator delete(ptr);
       return;
     }
-    getMemoryPool(((size + 7) / SLOT_BASE_SIZE) - 1).deallocate();
+    getMemoryPool(((size + 7) / SLOT_BASE_SIZE) - 1).deallocate(ptr);
   }
   template <typename T, typename... Args> friend T *newElement(Args &&...args);
   template <typename T> friend void deleteElement(T *p);
@@ -89,4 +89,4 @@ template <typename T> void deleteElement(T *p) {
     HashBucket::freeMemory(reinterpret_cast<void *>(p), sizeof(T));
   }
 }
-} // namespace memoryPool
+} // namespace MemoryPool
