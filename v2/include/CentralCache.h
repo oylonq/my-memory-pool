@@ -18,8 +18,29 @@ struct SpanTracker {
 };
 
 class CentralCache {
+
 public:
+  static CentralCache &getInstance() {
+    static CentralCache instance;
+    return instance;
+  }
+
+  void *fetchRange(size_t index);
+  void returnRange(void *start, size_t size, size_t index);
+
 private:
+  // 相互是还所有原子指针为 nullptr
+  CentralCache();
+  // 从页缓存获取内存
+  void *fetchFromPageCache(size_t size);
+
+  // 获取 span 信息
+  SpanTracker *getSpanTracker(void *blockCount);
+
+  // 更新 span 的空闲计数并检查是否可以归还
+  void updateSpanFreeCount(SpanTracker *tracker, size_t newFreeBlocks,
+                           size_t index);
+
 private:
   // 中心缓存的自由链表
   std::array<std::atomic<void *>, FREE_LIST_SIZE> centralFreeList_;
